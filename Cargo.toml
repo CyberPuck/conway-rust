@@ -1,0 +1,10 @@
+[package]
+name = "conway-life"
+version = "0.1.0"
+authors = ["CyberPuck <traverskyle9@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nannou = "0.15.0"
