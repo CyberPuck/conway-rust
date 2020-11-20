@@ -36,6 +36,17 @@ impl<T: Copy + std::cmp::PartialOrd<usize>> Grid<T> {
         (self.row_size, self.column_size)
     }
 
+    /// Simple cloning function.  Produces a brand new Grid that is identical to self.
+    /// # Returns
+    /// Grid<T>, identical Grid to self
+    pub fn clone(&self) -> Grid<T> {
+        Grid {
+            row_size: self.row_size,
+            column_size: self.column_size,
+            cells: self.cells.to_vec(),
+        }
+    }
+
     /// Gets a specified element in the grid.  Will check row and column input ranges.
     /// # Params
     /// row, usize:  0 based row of the desired cell
@@ -248,6 +259,58 @@ mod test {
         let result = grid.set(2, 2, 1);
         assert!(result.is_ok());
         //row 3 empty
-        // TODO: run through all cells for neighbors
+        // Run through all cells for neighbors
+        // Row 1
+        let num_n = grid.get_number_of_neighbors(0, 0);
+        assert!(num_n.is_ok());
+        assert_eq!(1, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(0, 1);
+        assert!(num_n.is_ok());
+        assert_eq!(2, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(0, 2);
+        assert!(num_n.is_ok());
+        assert_eq!(3, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(0, 3);
+        assert!(num_n.is_ok());
+        assert_eq!(2, num_n.unwrap());
+        // row 2
+        let num_n = grid.get_number_of_neighbors(1, 0);
+        assert!(num_n.is_ok());
+        assert_eq!(3, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(1, 1);
+        assert!(num_n.is_ok());
+        assert_eq!(4, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(1, 2);
+        assert!(num_n.is_ok());
+        assert_eq!(4, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(1, 3);
+        assert!(num_n.is_ok());
+        assert_eq!(2, num_n.unwrap());
+        // row 3
+        let num_n = grid.get_number_of_neighbors(2, 0);
+        assert!(num_n.is_ok());
+        assert_eq!(2, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(2, 1);
+        assert!(num_n.is_ok());
+        assert_eq!(4, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(2, 2);
+        assert!(num_n.is_ok());
+        assert_eq!(4, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(2, 3);
+        assert!(num_n.is_ok());
+        assert_eq!(3, num_n.unwrap());
+        // row 4
+        let num_n = grid.get_number_of_neighbors(3, 0);
+        assert!(num_n.is_ok());
+        assert_eq!(2, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(3, 1);
+        assert!(num_n.is_ok());
+        assert_eq!(3, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(3, 2);
+        assert!(num_n.is_ok());
+        assert_eq!(2, num_n.unwrap());
+        let num_n = grid.get_number_of_neighbors(3, 3);
+        assert!(num_n.is_ok());
+        assert_eq!(1, num_n.unwrap());
     }
 }

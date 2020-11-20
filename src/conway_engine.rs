@@ -1,5 +1,5 @@
-use super::grid;
 /// Engine for running Conway's Game of Life
+use super::grid;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -12,13 +12,7 @@ pub struct ConwayEngine {
 }
 
 impl ConwayEngine {
-    pub fn new(
-        filename: &String,
-        height: f32,
-        width: f32,
-        update_rate: usize,
-        number_of_steps: usize,
-    ) -> ConwayEngine {
+    pub fn new(filename: &String, height: f32, width: f32) -> ConwayEngine {
         // read the file
         let mut file_data = read_engine_file(filename).expect("Failed to read in engine file");
         // parse the header
@@ -33,9 +27,10 @@ impl ConwayEngine {
         let grid = generate_grid(
             row_size,
             column_size,
-            file_data[1..file_data.len()].to_vec(),
+            file_data[0..file_data.len()].to_vec(),
         )
         .expect("Failed to generate the grid");
+
         ConwayEngine {
             grid,
             height,
@@ -53,29 +48,33 @@ impl ConwayEngine {
             return;
         }
 
-        // TODO: will need to generate a new grid to fill in...
+        // Generate new grid to fill in next steps
+        let mut next_grid = self.grid.clone();
         let (row_size, column_size) = self.grid.size();
         for row_index in 0..row_size {
             for column_index in 0..column_size {
                 let number_of_neighbors = self
                     .grid
                     .get_number_of_neighbors(row_index, column_index)
-                    .expect("Failed to get the number of neightbors");
+                    .expect("Failed to get the number of neighbors");
                 let cell_status = self
                     .grid
                     .get(row_index, column_index)
                     .expect("Failed to get cell");
                 if (number_of_neighbors < 2 || number_of_neighbors > 3) && *cell_status == 1 {
-                    self.grid
+                    next_grid
                         .set(row_index, column_index, 0)
                         .expect("Failed to kill cell");
                 } else if number_of_neighbors == 3 && *cell_status == 0 {
-                    self.grid
+                    next_grid
                         .set(row_index, column_index, 1)
                         .expect("Failed to create cell");
                 }
             }
         }
+        // swap grids
+        self.grid = next_grid;
+        self.number_of_steps -= 1;
     }
 
     pub fn get_update_rate(&self) -> usize {
@@ -86,8 +85,36 @@ impl ConwayEngine {
         return self.number_of_steps;
     }
 
-    fn generate_new_grid(&self) -> grid::Grid<usize> {
-        unimplemented!();
+    /// Calculate the spacing between rows and columns.
+    /// The maths: (self.width / self.grid.column_size, self.height / self.grid.row_size)
+    /// # Returns
+    /// (f32, f32), (X spacing, Y spacing)
+    pub fn get_grid_spacing(&self) -> (f32, f32) {
+        (
+            self.width / self.grid.size().1 as f32,
+            self.height / self.grid.size().0 as f32,
+        )
+    }
+
+    /// Get the row and column count for the grid
+    /// # Returns
+    /// (usize, usize), (row_size, column_size)
+    pub fn get_grid_dimensions(&self) -> (usize, usize) {
+        self.grid.size()
+    }
+
+    /// Get the state of a cell.
+    /// Returns either the cell contents or 0 on an error.
+    /// # Params
+    /// row_index: usize, row index in the engine grid.
+    /// column_index: usize, column index in the engine grid.
+    /// # Returns
+    /// usize, Cell state or 0
+    pub fn get_cell(&self, row_index: usize, column_index: usize) -> usize {
+        match self.grid.get(row_index, column_index) {
+            Ok(data) => *data,
+            Err(_err) => 0,
+        }
     }
 
     /// Replace the existing grid with a new grid.
@@ -229,6 +256,21 @@ mod test {
     use super::*;
 
     #[test]
+    fn test_new() {
+        let engine = ConwayEngine::new(&"test-files/test2.txt".to_string(), 768.0, 1024.0);
+        for row in 0..engine.get_grid_dimensions().0 {
+            let mut row_s: String = "".to_string();
+            for column in 0..engine.get_grid_dimensions().1 {
+                row_s += &engine.get_cell(row, column).to_string();
+            }
+            println!("{}", row_s);
+        }
+        assert_eq!(engine.get_cell(1, 2), 1);
+        assert_eq!(engine.get_cell(2, 2), 1);
+        assert_eq!(engine.get_cell(3, 2), 1);
+    }
+
+    #[test]
     fn test_read_engine_file() {
         let result = read_engine_file(&"test-files/test.txt".to_string());
         assert!(result.is_ok());
@@ -253,6 +295,18 @@ mod test {
         ];
         assert_eq!(result.unwrap(), test_file_bad);
 
+        let result = read_engine_file(&"test-files/test2.txt".to_string());
+        assert!(result.is_ok());
+        let test_file_two: Vec<String> = vec![
+            "5, 5, 20, 1".to_string(),
+            "0,0,0,0,0".to_string(),
+            "0,0,1,0,0".to_string(),
+            "0,0,1,0,0".to_string(),
+            "0,0,1,0,0".to_string(),
+            "0,0,0,0,0".to_string(),
+        ];
+        assert_eq!(result.unwrap(), test_file_two);
+
         let result = read_engine_file(&"random_file_name.hello_world".to_string());
         assert!(result.is_err());
     }
@@ -268,6 +322,11 @@ mod test {
         assert!(data.is_ok());
         let data = data.unwrap();
         assert_eq!(data, (1, 2, 3, 4));
+
+        let data = parse_header("5, 5, 20, 1".to_string());
+        assert!(data.is_ok());
+        let data = data.unwrap();
+        assert_eq!(data, (5, 5, 20, 1));
 
         let data = parse_header("5, 5, 5".to_string());
         assert!(data.is_err());
@@ -345,5 +404,18 @@ mod test {
         ];
         let grid = generate_grid(5, 5, test_grid);
         assert!(grid.is_err());
+    }
+
+    #[test]
+    fn test_get_grid_spacing() {
+        let engine = ConwayEngine::new(&"test-files/test2.txt".to_string(), 768.0, 1024.0);
+        let (x_width, y_width) = engine.get_grid_spacing();
+        assert_eq!(x_width, 204.8);
+        assert_eq!(y_width, 153.6);
+
+        let engine = ConwayEngine::new(&"test-files/test3.txt".to_string(), 768.0, 1024.0);
+        let (x_width, y_width) = engine.get_grid_spacing();
+        assert_eq!(x_width, 170.66667);
+        assert_eq!(y_width, 153.6);
     }
 }
