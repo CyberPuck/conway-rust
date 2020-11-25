@@ -121,33 +121,22 @@ impl<T: Copy + std::cmp::PartialOrd<usize>> Grid<T> {
         };
 
         // loop through neighbor coordinates
-        println!("({}, {})", row_min, row_max);
-        println!("({}, {})", column_min, column_max);
         for neighbor_row_index in row_min..=row_max {
             for neighbor_column_index in column_min..=column_max {
-                println!(
-                    "Hitting ({}, {})",
-                    neighbor_row_index, neighbor_column_index
-                );
                 // skip center coordinate
                 if neighbor_row_index == row_index && neighbor_column_index == column_index {
-                    println!("Skipping...");
                     continue;
                 }
                 match self.get(neighbor_row_index, neighbor_column_index) {
                     Ok(cell_data) => {
                         if *cell_data > 0 {
-                            println!("neighbor added...");
                             number_of_neighbors += 1;
-                        } else {
-                            println!("Not added...");
                         }
                     }
                     Err(_err) => (println!("{}", _err)), // skip over error, probably out of bounds
                 };
             }
         }
-        println!("Returning {}...", number_of_neighbors);
         Ok(number_of_neighbors)
     }
 }

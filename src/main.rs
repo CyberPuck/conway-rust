@@ -20,13 +20,13 @@ fn print_help() {
 mod conway_engine;
 mod grid;
 use nannou::prelude::*;
+use std::time::Duration;
 
 struct Model {
-    position_x: f32,
-    position_y: f32,
     engine: conway_engine::ConwayEngine,
     window_height: f32,
     window_width: f32,
+    time: Duration,
 }
 
 fn main() {
@@ -41,16 +41,15 @@ fn model(app: &App) -> Model {
     // setup the game
     let window_data = app.main_window().rect();
     let engine = conway_engine::ConwayEngine::new(
-        &"test-files/test2.txt".to_string(),
+        &"test-files/glider_test.txt".to_string(),
         window_data.h(),
         window_data.w(),
     );
     Model {
-        position_x: 50.0,
-        position_y: 50.0,
         engine,
         window_height: window_data.h(),
         window_width: window_data.w(),
+        time: Duration::new(0, 0),
     }
 }
 
@@ -59,14 +58,12 @@ fn event(_app: &App, _model: &mut Model, _event: Event) {
 }
 
 fn update(_app: &App, model: &mut Model, _update: Update) {
-    if model.position_x > 150.0 {
-        model.position_x = 50.0;
+    // use _update.since_last as how long it has been since last step
+    model.time += _update.since_last;
+    if model.time > model.engine.get_update_rate_duration() {
+        model.engine.take_step();
+        model.time = Duration::new(0, 0);
     }
-    if model.position_y > 150.0 {
-        model.position_y = 50.0;
-    }
-    model.position_x += 1.0;
-    model.position_y += 1.0;
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
@@ -95,9 +92,9 @@ fn draw_scene(model: &Model, draw: &Draw) {
             if model.engine.get_cell(row_number, column_number) > 0 {
                 draw.rect()
                     .color(BLACK)
-                    .w(row_width)
-                    .h(column_width)
-                    .x_y(x, y);
+                    .w(row_width - 1.0)
+                    .h(column_width - 1.0)
+                    .x_y(x + 0.5, y + 0.5);
             }
         }
     }
@@ -105,6 +102,7 @@ fn draw_scene(model: &Model, draw: &Draw) {
 
 #[allow(dead_code)]
 /// Simple test function that will print out a red and black checkerboard
+/// This function is for integration testing, it is not used during normal operations.
 fn draw_checkboard(model: &Model, draw: &Draw) {
     let (row_width, column_width) = model.engine.get_grid_spacing();
     let (row_count, column_count) = model.engine.get_grid_dimensions();
@@ -116,15 +114,15 @@ fn draw_checkboard(model: &Model, draw: &Draw) {
             {
                 draw.rect()
                     .color(BLACK)
-                    .w(row_width)
-                    .h(column_width)
-                    .x_y(x, y);
+                    .w(row_width - 1.0)
+                    .h(column_width - 1.0)
+                    .x_y(x + 0.5, y + 0.5);
             } else {
                 draw.rect()
                     .color(RED)
-                    .w(row_width)
-                    .h(column_width)
-                    .x_y(x, y);
+                    .w(row_width - 1.0)
+                    .h(column_width - 1.0)
+                    .x_y(x + 0.5, y + 0.5);
             }
         }
     }

@@ -2,6 +2,7 @@
 use super::grid;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::time::Duration;
 
 pub struct ConwayEngine {
     grid: grid::Grid<usize>,
@@ -77,12 +78,19 @@ impl ConwayEngine {
         self.number_of_steps -= 1;
     }
 
-    pub fn get_update_rate(&self) -> usize {
-        return self.update_rate;
+    /// Based on update_rate, return a duration.
+    /// Whole numbers of update_rate is seconds.
+    /// Decimal of update_rate is milliseconds.
+    /// # Equation
+    /// Duration::new(update_rate, 0)
+    /// # Returns
+    /// Duration, self.update_rate as a duration
+    pub fn get_update_rate_duration(&self) -> Duration {
+        Duration::new(self.update_rate as u64, 0)
     }
 
     pub fn get_number_of_steps(&self) -> usize {
-        return self.number_of_steps;
+        self.number_of_steps
     }
 
     /// Calculate the spacing between rows and columns.
