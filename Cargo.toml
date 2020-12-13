@@ -1,6 +1,6 @@
 [package]
-name = "conway-life"
-version = "0.1.0"
+name = "conway-rust"
+version = "0.2.0"
 authors = ["CyberPuck <traverskyle9@gmail.com>"]
 edition = "2018"
 
