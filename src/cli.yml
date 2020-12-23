@@ -36,13 +36,13 @@ args:
         short: c
         long: alive
         value_name: COLOR
-        help: Color of an alive cell (default is white)
+        help: Color of living cells, list of colors https://docs.rs/nannou/0.11.1/nannou/color/index.html#constants
         takes_value: true
     - dead:
         short: d
         long: dead
         value_name: COLOR
-        help: Color of a dead cell (default is black)
+        help: Color of living cells, list of colors https://docs.rs/nannou/0.11.1/nannou/color/index.html#constants
         takes_value: true
     - grid:
         short: g
