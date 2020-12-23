@@ -17,6 +17,8 @@ fn print_help() {
     unimplemented!();
 }
 */
+#[macro_use]
+extern crate clap;
 mod conway_engine;
 mod grid;
 use nannou::prelude::*;
@@ -30,6 +32,15 @@ struct Model {
 }
 
 fn main() {
+    // handle CLI args
+    let yaml = load_yaml!("cli.yml");
+    // try setting the name, version
+    let cli_app = clap::App::from_yaml(yaml);
+    let matches = cli_app.author(crate_authors!()).version(crate_version!()).about(crate_description!()).get_matches();
+
+    println!("{:?}", matches);
+
+    
     nannou::app(model)
         //.event(event)
         .update(update)
