@@ -283,7 +283,7 @@ mod test {
         let result = read_engine_file(&"test-files/test.txt".to_string());
         assert!(result.is_ok());
         let test_file_one: Vec<String> = vec![
-            "5, 5".to_string(),
+            "5, 5, 1, 20".to_string(),
             "1,0,0,0,0".to_string(),
             "0,1,0,0,0".to_string(),
             "0,0,1,0,0".to_string(),
@@ -306,7 +306,7 @@ mod test {
         let result = read_engine_file(&"test-files/test2.txt".to_string());
         assert!(result.is_ok());
         let test_file_two: Vec<String> = vec![
-            "5, 5, 20, 1".to_string(),
+            "5, 5, 1, 20".to_string(),
             "0,0,0,0,0".to_string(),
             "0,0,1,0,0".to_string(),
             "0,0,1,0,0".to_string(),
