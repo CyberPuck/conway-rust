@@ -423,7 +423,7 @@ mod test {
 
         let engine = ConwayEngine::new(&"test-files/test3.txt".to_string(), 768.0, 1024.0);
         let (x_width, y_width) = engine.get_grid_spacing();
-        assert_eq!(x_width, 170.66667);
-        assert_eq!(y_width, 153.6);
+        assert_eq!(x_width, 64.0);
+        assert_eq!(y_width, 51.2);
     }
 }
