@@ -33,7 +33,7 @@ args:
         help: Width of pixels in the draw window (default is 1024)
         takes_value: true
     - alive:
-        short: c
+        short: a
         long: alive
         value_name: COLOR
         help: Color of living cells, list of colors https://docs.rs/nannou/0.11.1/nannou/color/index.html#constants
