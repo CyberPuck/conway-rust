@@ -14,7 +14,6 @@ struct ConfigParams {
     // TODO: height and width are added during construction, are these fields needed globally?
     height: u32,
     width: u32,
-    // TODO:  Need to convert CLI params to Nannou color
     alive_color: nannou::color::rgb::Srgb<u8>,
     dead_color: nannou::color::rgb::Srgb<u8>,
     enable_grid: bool,
@@ -95,7 +94,7 @@ impl GUI {
 
         // start the GUI application
         nannou::app(GUI::model)
-            .size(height, width)
+            .size(width, height)
             .update(GUI::update)
             .run();
     }
@@ -174,8 +173,9 @@ impl GUI {
         // Draw the scene
         GUI::draw_scene(model, &draw);
         // drawing grid
-        //if(model.params.enable_grid)
-        //GUI::draw_grid(model, &draw);
+        if model.params.enable_grid {
+            GUI::draw_grid(model, &draw);
+        }
 
         // put everything on the frame
         draw.to_frame(app, &frame).unwrap();
@@ -199,10 +199,54 @@ impl GUI {
         }
     }
 
+    /// Draw a grid on the display.  Color of gird is defaulted to ```SLATEGREY```.
+    /// # PARAMS
+    /// - model: &Model, reference holding engine and window data
+    /// - draw: &Draw, reference for drawing objects to the screen
+    fn draw_grid(model: &Model, draw: &Draw) {
+        let grid_color = SLATEGREY;
+        let (lower_x, lower_y) = GUI::get_lower_window_coordinates(model);
+
+        let (row_width, column_width) = model.engine.get_grid_spacing();
+        let (row_count, column_count) = model.engine.get_grid_dimensions();
+
+        // draw ROW grid lines
+        let mut y_position = lower_y;
+        draw.rect()
+            .color(grid_color)
+            .w(model.window_width)
+            .h(1.0)
+            .x_y(0.0, y_position + 0.5);
+        for _row_index in 0..row_count {
+            y_position += column_width;
+            draw.rect()
+                .color(grid_color)
+                .w(model.window_width)
+                .h(1.0)
+                .x_y(0.0, y_position + 0.5);
+        }
+
+        // draw the COLUMN grid lines
+        let mut x_position = lower_x;
+        draw.rect()
+            .color(grid_color)
+            .w(1.0)
+            .h(model.window_height)
+            .x_y(x_position + 0.5, 0.0);
+        for _column_index in 0..column_count {
+            x_position += row_width;
+            draw.rect()
+                .color(grid_color)
+                .w(1.0)
+                .h(model.window_height)
+                .x_y(x_position + 0.5, 0.0);
+        }
+    }
+
     #[allow(dead_code)]
     /// Simple test function that will print out a red and black checkerboard.
     /// This is a flagged option allowing users to see individual cells if all are dead or alive.
-    fn draw_grid(model: &Model, draw: &Draw) {
+    fn draw_checkerboard(model: &Model, draw: &Draw) {
         let (row_width, column_width) = model.engine.get_grid_spacing();
         let (row_count, column_count) = model.engine.get_grid_dimensions();
         for row_number in 0..row_count {
@@ -233,15 +277,28 @@ impl GUI {
     /// - row_index: usize, row index in the grid
     /// - Column_index: usize, column index in the grid
     /// - model: &Model, model that contains the engine and grid dimensions
+    ///
     /// # Returns
     /// - (f32, f32), (X, Y) screen coordinates for the given grid cell
     fn convert_coordinates(row_index: usize, column_index: usize, model: &Model) -> (f32, f32) {
-        let lower_x = (model.window_width / 2.0) * -1.0;
-        let lower_y = (model.window_height / 2.0) * -1.0;
+        let (lower_x, lower_y) = GUI::get_lower_window_coordinates(model);
 
         let (x_width, y_width) = model.engine.get_grid_spacing();
         let coordinate_x = lower_x + (column_index as f32 * x_width + x_width / 2.0);
         let coordinate_y = (-1.0 * lower_y) - (row_index as f32 * y_width + y_width / 2.0);
         (coordinate_x, coordinate_y)
+    }
+
+    /// Get the lower X, Y coorindates of the window.
+    /// # Params
+    /// - model: &Model, reference to the model, has the window width and height.
+    ///
+    /// # Returns
+    /// (f32, f32), tuple of (X, Y) coordiates of the lower left corner of the window.
+    fn get_lower_window_coordinates(model: &Model) -> (f32, f32) {
+        let lower_x = (model.window_width / 2.0) * -1.0;
+        let lower_y = (model.window_height / 2.0) * -1.0;
+
+        (lower_x, lower_y)
     }
 }
