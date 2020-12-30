@@ -1,0 +1,51 @@
+# CLAP CLI arguments
+# Ignoring version, author, etc. (need to pull from cargo.toml)
+name: conway-rust
+args:
+    - file:
+        short: f
+        long: file
+        value_name: FILE_NAME
+        help: Conway game configuration file
+        takes_value: true
+    - steps:
+        short: n
+        long: steps
+        value_name: STEPS
+        help: Number of steps the simulation will take, 0 is an infinite number of steps
+        takes_value: true
+    - rate:
+        short: r
+        long: rate
+        value_name: RATE
+        help: Number of seconds between steps
+        takes_value: true
+    - height:
+        short: h
+        long: height
+        value_name: HEIGHT
+        help: Height of pixels in the draw window (default is 768)
+        takes_value: true
+    - width:
+        short: w
+        long: width
+        value_name: WIDTH
+        help: Width of pixels in the draw window (default is 1024)
+        takes_value: true
+    - alive:
+        short: a
+        long: alive
+        value_name: COLOR
+        help: Color of living cells, list of colors https://docs.rs/nannou/0.11.1/nannou/color/index.html#constants
+        takes_value: true
+    - dead:
+        short: d
+        long: dead
+        value_name: COLOR
+        help: Color of living cells, list of colors https://docs.rs/nannou/0.11.1/nannou/color/index.html#constants
+        takes_value: true
+    - grid:
+        short: g
+        long: grid
+        help: If present grid lines will be drawn on the window
+        takes_value: false

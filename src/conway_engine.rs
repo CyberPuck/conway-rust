@@ -1,5 +1,6 @@
 /// Engine for running Conway's Game of Life
-use super::grid;
+#[path = "grid.rs"]
+mod grid;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::time::Duration;
@@ -12,13 +13,34 @@ pub struct ConwayEngine {
     number_of_steps: usize,
 }
 
+// Static memory with a built in oscillator.
+static DEFAULT_ARRAY: [&str; 6] = [
+    "5, 5, 1, 20",
+    "0,0,0,0,0",
+    "0,0,1,0,0",
+    "0,0,1,0,0",
+    "0,0,1,0,0",
+    "0,0,0,0,0",
+];
+
 impl ConwayEngine {
-    pub fn new(filename: &String, height: f32, width: f32) -> ConwayEngine {
-        // read the file
-        let mut file_data = read_engine_file(filename).expect("Failed to read in engine file");
+    /// Creates a new engine instance based on the input file, and parameters passed in.
+    /// If the file is missing data, the parameters passed in will be used instead.
+    pub fn new(
+        filename: &String,
+        height: f32,
+        width: f32,
+        default_update_rate: usize,
+        default_steps: usize,
+    ) -> ConwayEngine {
+        // read the file, or sub in the default oscillator
+        let mut file_data = match read_engine_file(filename) {
+            Ok(data) => data,
+            Err(_err) => generate_default_file_array(),
+        };
         // parse the header
-        let header_data =
-            parse_header(file_data.remove(0)).expect("Failed to parse engine file header");
+        let header_data = parse_header(file_data.remove(0), default_update_rate, default_steps)
+            .expect("Failed to parse engine file header");
         // store elements to variables
         let row_size = header_data.0;
         let column_size = header_data.1;
@@ -144,24 +166,13 @@ impl ConwayEngine {
     }
 }
 
-/// Reads an input file, and produces a Grid object that can be used by the engine.
-/// # File format
-/// - First line is comma delimited header "row size, column size"
-/// - There must be at least X+1 row size lines in the file.
-/// - Each line must be at least column size (comma delimited).
-/// - Each entry must be either a "0" or "1"
-/// ## Ignored data
-/// - Lines starting with '#' will be skipped as comments
-/// - Any extra data will be ignored and not parsed.
-/// ## Error conditions
-/// - There are not enough lines to satisfy row size + 1
-/// - A column is too small
-/// - Cell entry is not a "0" or "1"
+/// Reads an input file and returns a collection of strings representing lines in the file.
+/// Each line is denoted by a newline character.
 /// This function is static, no need to reference the struct.
 /// # Params
-/// filename: &String, the input file to generate the intial grid and engine state
+/// filename: &String, the input file to read in
 /// # Returns
-/// Result<grid::Grid<usize>, &'static str>, Grid on success, an error string if reading the file fails.
+/// Result<Vec<String>, &'static str>, Collection of Strings on success, an error string if reading the file fails.
 fn read_engine_file(filename: &String) -> Result<Vec<String>, &'static str> {
     let file = match File::open(filename) {
         Ok(file) => file,
@@ -183,19 +194,37 @@ fn read_engine_file(filename: &String) -> Result<Vec<String>, &'static str> {
     Ok(file_data)
 }
 
+/// Convert the static [str] array to a Vec<String>.
+/// The result is a default oscillator.
+/// # Returns
+/// Vec<String>, vector representing a default osciallator.
+fn generate_default_file_array() -> Vec<String> {
+    let mut default_vec: Vec<String> = Vec::new();
+    for line in DEFAULT_ARRAY.iter() {
+        default_vec.push(line.to_string());
+    }
+    default_vec
+}
+
 /// Given a header array of strings, parse out:
 /// - Row size
 /// - Column size
-/// - update rate
-/// - number of steps
+/// - update rate (optional)
+/// - number of steps (optional)
 /// # Params
 /// header_line: String, the raw header line from the file.
+/// default_update_rate: usize, default update rate if not provided in the file.
+/// default_steps: uszie, default number of steps if not provided in the file.
 /// # Returns
 /// (usize, usize, usize, usize), tuple containing: row size, column size, update rate, number of steps
-fn parse_header(header_line: String) -> Result<(usize, usize, usize, usize), &'static str> {
+fn parse_header(
+    header_line: String,
+    default_update_rate: usize,
+    default_steps: usize,
+) -> Result<(usize, usize, usize, usize), &'static str> {
     let header_data: Vec<&str> = header_line.split(',').collect();
-    if header_data.len() < 4 {
-        return Err("Parse error, header is too small.  Row and column size,  need.");
+    if header_data.len() < 2 {
+        return Err("Parse error, header is too small.  Row and column size are needed.");
     }
     let row_size = header_data[0]
         .trim()
@@ -205,14 +234,22 @@ fn parse_header(header_line: String) -> Result<(usize, usize, usize, usize), &'s
         .trim()
         .parse::<usize>()
         .expect("Failed to parse column size");
-    let update_rate = header_data[2]
-        .trim()
-        .parse::<usize>()
-        .expect("Failed to parse update rate");
-    let number_of_steps = header_data[3]
-        .trim()
-        .parse::<usize>()
-        .expect("Failed to parse number of steps");
+
+    // handle the update rate and number of steps, if no value present use the defaults provided
+    let update_rate = match header_data.get(2) {
+        Some(data) => data
+            .trim()
+            .parse::<usize>()
+            .expect("Header update rate not formatted correctly"),
+        None => default_update_rate,
+    };
+    let number_of_steps = match header_data.get(3) {
+        Some(data) => data
+            .trim()
+            .parse::<usize>()
+            .expect("Header # steps not formatted correctly"),
+        None => default_steps,
+    };
 
     Ok((row_size, column_size, update_rate, number_of_steps))
 }
@@ -265,7 +302,21 @@ mod test {
 
     #[test]
     fn test_new() {
-        let engine = ConwayEngine::new(&"test-files/test2.txt".to_string(), 768.0, 1024.0);
+        let engine = ConwayEngine::new(&"test-files/test.txt".to_string(), 768.0, 1024.0, 0, 0);
+        for row in 0..engine.get_grid_dimensions().0 {
+            let mut row_s: String = "".to_string();
+            for column in 0..engine.get_grid_dimensions().1 {
+                row_s += &engine.get_cell(row, column).to_string();
+            }
+            println!("{}", row_s);
+        }
+        assert_eq!(engine.get_cell(0, 0), 1);
+        assert_eq!(engine.get_cell(1, 1), 1);
+        assert_eq!(engine.get_cell(2, 2), 1);
+        assert_eq!(engine.get_cell(3, 3), 1);
+        assert_eq!(engine.get_cell(4, 4), 1);
+
+        let engine = ConwayEngine::new(&"".to_string(), 768.0, 2014.0, 0, 0);
         for row in 0..engine.get_grid_dimensions().0 {
             let mut row_s: String = "".to_string();
             for column in 0..engine.get_grid_dimensions().1 {
@@ -283,7 +334,7 @@ mod test {
         let result = read_engine_file(&"test-files/test.txt".to_string());
         assert!(result.is_ok());
         let test_file_one: Vec<String> = vec![
-            "5, 5".to_string(),
+            "5, 5, 1, 20".to_string(),
             "1,0,0,0,0".to_string(),
             "0,1,0,0,0".to_string(),
             "0,0,1,0,0".to_string(),
@@ -306,7 +357,7 @@ mod test {
         let result = read_engine_file(&"test-files/test2.txt".to_string());
         assert!(result.is_ok());
         let test_file_two: Vec<String> = vec![
-            "5, 5, 20, 1".to_string(),
+            "5, 5, 1, 20".to_string(),
             "0,0,0,0,0".to_string(),
             "0,0,1,0,0".to_string(),
             "0,0,1,0,0".to_string(),
@@ -321,22 +372,32 @@ mod test {
 
     #[test]
     fn test_parse_header() {
-        let data = parse_header("5, 5, 5, 5".to_string());
+        let data = parse_header("5, 5, 5, 5".to_string(), 0, 0);
         assert!(data.is_ok());
         let data = data.unwrap();
         assert_eq!(data, (5, 5, 5, 5));
 
-        let data = parse_header("1, 2, 3, 4, 6".to_string());
+        let data = parse_header("1, 2, 3, 4, 6".to_string(), 0, 0);
         assert!(data.is_ok());
         let data = data.unwrap();
         assert_eq!(data, (1, 2, 3, 4));
 
-        let data = parse_header("5, 5, 20, 1".to_string());
+        let data = parse_header("5, 5, 20, 1".to_string(), 0, 0);
         assert!(data.is_ok());
         let data = data.unwrap();
         assert_eq!(data, (5, 5, 20, 1));
 
-        let data = parse_header("5, 5, 5".to_string());
+        let data = parse_header("5, 5, 5".to_string(), 0, 0);
+        assert!(data.is_ok());
+        let data = data.unwrap();
+        assert_eq!(data, (5, 5, 5, 0));
+
+        let data = parse_header("5, 5".to_string(), 0, 0);
+        assert!(data.is_ok());
+        let data = data.unwrap();
+        assert_eq!(data, (5, 5, 0, 0));
+
+        let data = parse_header("5".to_string(), 0, 0);
         assert!(data.is_err());
     }
 
@@ -416,14 +477,14 @@ mod test {
 
     #[test]
     fn test_get_grid_spacing() {
-        let engine = ConwayEngine::new(&"test-files/test2.txt".to_string(), 768.0, 1024.0);
+        let engine = ConwayEngine::new(&"test-files/test2.txt".to_string(), 768.0, 1024.0, 0, 0);
         let (x_width, y_width) = engine.get_grid_spacing();
         assert_eq!(x_width, 204.8);
         assert_eq!(y_width, 153.6);
 
-        let engine = ConwayEngine::new(&"test-files/test3.txt".to_string(), 768.0, 1024.0);
+        let engine = ConwayEngine::new(&"test-files/test3.txt".to_string(), 768.0, 1024.0, 0, 0);
         let (x_width, y_width) = engine.get_grid_spacing();
-        assert_eq!(x_width, 170.66667);
-        assert_eq!(y_width, 153.6);
+        assert_eq!(x_width, 64.0);
+        assert_eq!(y_width, 51.2);
     }
 }

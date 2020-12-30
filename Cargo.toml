@@ -1,10 +1,12 @@
 [package]
-name = "conway-life"
-version = "0.1.0"
+name = "conway-rust"
+version = "0.2.0"
 authors = ["CyberPuck <traverskyle9@gmail.com>"]
 edition = "2018"
+description = "Conway's game of life written in rust as a GUI application"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+clap = { version = "2.33", features = ["yaml"] }
 nannou = "0.15.0"
