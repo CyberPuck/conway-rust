@@ -13,11 +13,12 @@ pub struct ConwayEngine {
     number_of_steps: usize,
     simulation_ended: bool,
     simulation_non_stop: bool,
+    name: String,
 }
 
 // Static memory with a built in oscillator.
 static DEFAULT_ARRAY: [&str; 6] = [
-    "5, 5, 1, 20",
+    "5, 5",
     "0,0,0,0,0",
     "0,0,1,0,0",
     "0,0,1,0,0",
@@ -35,9 +36,15 @@ impl ConwayEngine {
         default_update_rate: usize,
         default_steps: usize,
     ) -> ConwayEngine {
+        let mut name = "No file found, using default pattern";
+
         // read the file, or sub in the default oscillator
         let mut file_data = match read_engine_file(filename) {
-            Ok(data) => data,
+            Ok(data) => {
+                // file parsed, set the filename as the name of the engine
+                name = filename;
+                data
+            }
             Err(_err) => generate_default_file_array(),
         };
         // parse the header
@@ -64,6 +71,7 @@ impl ConwayEngine {
             number_of_steps,
             simulation_ended: false,
             simulation_non_stop: if number_of_steps == 0 { true } else { false },
+            name: name.to_string(),
         }
     }
 
@@ -137,6 +145,37 @@ impl ConwayEngine {
     /// Return the self.simulation_non_stop boolean.
     pub fn is_simulation_non_stop(&self) -> bool {
         return self.simulation_non_stop;
+    }
+
+    /// Get the name of the engine, there are two cases:
+    /// 1. File was not parsed, return "No file found, using default pattern"
+    /// 2. The filename used in the engine
+    /// # Returns
+    /// &String, name of the current engine session
+    pub fn get_name(&self) -> &String {
+        return &self.name;
+    }
+
+    /// Get the title of the engine.  This will provide a title description of the engine
+    /// in its current state.
+    /// # Returns
+    /// String, string representing the engine's current state
+    pub fn get_title_string(&self) -> String {
+        // format the end text string
+        let end_text = if self.is_simulation_non_stop() {
+            " -- non-stop"
+        } else if self.is_simulation_ended() {
+            " -- simulation ended"
+        } else {
+            ""
+        };
+
+        format!(
+            "Conway-rust v{}: {}{}",
+            crate_version!(),
+            self.get_name(),
+            end_text
+        )
     }
 
     /// Calculate the spacing between rows and columns.
@@ -510,5 +549,59 @@ mod test {
         let (x_width, y_width) = engine.get_grid_spacing();
         assert_eq!(x_width, 64.0);
         assert_eq!(y_width, 51.2);
+    }
+
+    #[test]
+    fn test_get_title_string() {
+        let engine = ConwayEngine::new(&"test-files/test2.txt".to_string(), 768.0, 1024.0, 0, 0);
+        assert_eq!(
+            engine.get_title_string(),
+            "Conway-rust v0.3.0: test-files/test2.txt"
+        );
+
+        let engine = ConwayEngine::new(
+            &"test-files/glider_test.txt".to_string(),
+            768.0,
+            1024.0,
+            0,
+            0,
+        );
+        assert_eq!(
+            engine.get_title_string(),
+            "Conway-rust v0.3.0: test-files/glider_test.txt -- non-stop"
+        );
+
+        let mut engine = ConwayEngine::new(
+            &"test-files/glider_test.txt".to_string(),
+            768.0,
+            1024.0,
+            0,
+            1,
+        );
+        engine.take_step();
+        assert_eq!(
+            engine.get_title_string(),
+            "Conway-rust v0.3.0: test-files/glider_test.txt -- simulation ended"
+        );
+
+        let engine = ConwayEngine::new(&"test-files/no-file.txt".to_string(), 768.0, 1024.0, 0, 1);
+        assert_eq!(
+            engine.get_title_string(),
+            "Conway-rust v0.3.0: No file found, using default pattern"
+        );
+
+        let engine = ConwayEngine::new(&"test-files/no-file.txt".to_string(), 768.0, 1024.0, 0, 0);
+        assert_eq!(
+            engine.get_title_string(),
+            "Conway-rust v0.3.0: No file found, using default pattern -- non-stop"
+        );
+
+        let mut engine =
+            ConwayEngine::new(&"test-files/no-file.txt".to_string(), 768.0, 1024.0, 0, 1);
+        engine.take_step();
+        assert_eq!(
+            engine.get_title_string(),
+            "Conway-rust v0.3.0: No file found, using default pattern -- simulation ended"
+        );
     }
 }

@@ -11,9 +11,8 @@ struct ConfigParams {
     file_name: &'static str,
     number_of_steps: usize,
     update_rate: usize,
-    // TODO: height and width are added during construction, are these fields needed globally?
-    height: u32,
-    width: u32,
+    height: f32,
+    width: f32,
     alive_color: nannou::color::rgb::Srgb<u8>,
     dead_color: nannou::color::rgb::Srgb<u8>,
     enable_grid: bool,
@@ -28,8 +27,8 @@ static mut GLOBAL_PARAMS: ConfigParams = ConfigParams {
     file_name: "",
     number_of_steps: 20,
     update_rate: 1,
-    height: 768,
-    width: 1024,
+    height: 768.0,
+    width: 1024.0,
     alive_color: BLACK,
     dead_color: WHITE,
     enable_grid: false,
@@ -61,8 +60,8 @@ impl GUI {
         file_name: String,
         number_of_steps: usize,
         update_rate: usize,
-        height: u32,
-        width: u32,
+        height: f32,
+        width: f32,
         alive_color: String,
         dead_color: String,
         enable_grid: bool,
@@ -95,7 +94,7 @@ impl GUI {
 
         // start the GUI application
         nannou::app(GUI::model)
-            .size(width, height)
+            .size(width as u32, height as u32)
             .update(GUI::update)
             .run();
     }
@@ -112,19 +111,17 @@ impl GUI {
         // }:)  unsafe saves the day, since GLOBAL_PARMS or its mutable data might be garbage
         // NOTE:  Feel like I'm making a noob mistake having to declare unsafe here
         unsafe {
+            // setup the game
+            let engine = conway_engine::ConwayEngine::new(
+                &GLOBAL_PARAMS.file_name.to_string(),
+                GLOBAL_PARAMS.height,
+                GLOBAL_PARAMS.width,
+                GLOBAL_PARAMS.update_rate,
+                GLOBAL_PARAMS.number_of_steps,
+            );
+
             // generate the window title
-            let name = if GLOBAL_PARAMS.file_name.len() == 0 {
-                format!(
-                    "Conway-Rust v{} No file found, using default pattern",
-                    crate_version!()
-                )
-            } else {
-                format!(
-                    "Conway-Rust v{} File - {}",
-                    crate_version!(),
-                    GLOBAL_PARAMS.file_name
-                )
-            };
+            let name = engine.get_title_string();
 
             // add a window to the view
             let id = app
@@ -134,22 +131,11 @@ impl GUI {
                 .build()
                 .unwrap();
 
-            // Get the dimensions of the main window
-            let window_data = app.main_window().rect();
-            // setup the game
-            let engine = conway_engine::ConwayEngine::new(
-                &GLOBAL_PARAMS.file_name.to_string(),
-                window_data.h(),
-                window_data.w(),
-                GLOBAL_PARAMS.update_rate,
-                GLOBAL_PARAMS.number_of_steps,
-            );
-
             // return the model
             Model {
                 engine,
-                window_height: window_data.h(),
-                window_width: window_data.w(),
+                window_height: GLOBAL_PARAMS.height,
+                window_width: GLOBAL_PARAMS.width,
                 time: Duration::new(0, 0),
                 params: GLOBAL_PARAMS,
                 window_id: id,
@@ -166,17 +152,13 @@ impl GUI {
 
             // update the window title if the simulation has eneded
             if model.engine.is_simulation_ended() {
-                app.window(model.window_id).unwrap().set_title(&format!(
-                    "Conway-rust {}: {} -- Simulation Completed",
-                    crate_version!(),
-                    model.params.file_name
-                ));
+                app.window(model.window_id)
+                    .unwrap()
+                    .set_title(&model.engine.get_title_string());
             } else if model.engine.is_simulation_non_stop() {
-                app.window(model.window_id).unwrap().set_title(&format!(
-                    "Conway-rust {}: {} -- Non-stop",
-                    crate_version!(),
-                    model.params.file_name
-                ));
+                app.window(model.window_id)
+                    .unwrap()
+                    .set_title(&model.engine.get_title_string());
             }
         };
     }

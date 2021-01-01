@@ -16,14 +16,14 @@ fn main() {
     // read in height and width, deafult is 1024 x 768
     let height = matches
         .value_of("height")
-        .unwrap_or("768")
-        .parse::<u32>()
+        .unwrap_or("768.0")
+        .parse::<f32>()
         .expect("Failed to parse height argument");
 
     let width = matches
         .value_of("width")
-        .unwrap_or("1024")
-        .parse::<u32>()
+        .unwrap_or("1024.0")
+        .parse::<f32>()
         .expect("Failed to parse width argument");
 
     // read in the update rate
