@@ -11,6 +11,8 @@ pub struct ConwayEngine {
     width: f32,
     update_rate: usize,
     number_of_steps: usize,
+    simulation_ended: bool,
+    simulation_non_stop: bool,
 }
 
 // Static memory with a built in oscillator.
@@ -60,15 +62,28 @@ impl ConwayEngine {
             width,
             update_rate,
             number_of_steps,
+            simulation_ended: false,
+            simulation_non_stop: if number_of_steps == 0 { true } else { false },
         }
     }
 
     /// Take a step in the simulation.
     /// This is where the rules of the game are applied to the application.
     pub fn take_step(&mut self) {
-        // do not step forward if there are no more steps to take
-        if self.get_number_of_steps() <= 0 {
+        // If the simulation is marked as ended, skip this fucntion
+        if self.simulation_ended {
             return;
+        }
+
+        // only decrement steps if the simulation has not stopped
+        if !self.simulation_non_stop {
+            self.number_of_steps -= 1;
+
+            // if the number of steps is zero, set the simulation to ended
+            // NOTE: This ensures the counter won't reach a negative number
+            if self.get_number_of_steps() == 0 {
+                self.simulation_ended = true;
+            }
         }
 
         // Generate new grid to fill in next steps
@@ -97,7 +112,6 @@ impl ConwayEngine {
         }
         // swap grids
         self.grid = next_grid;
-        self.number_of_steps -= 1;
     }
 
     /// Based on update_rate, return a duration.
@@ -113,6 +127,16 @@ impl ConwayEngine {
 
     pub fn get_number_of_steps(&self) -> usize {
         self.number_of_steps
+    }
+
+    /// Return the self.simulation_ended boolean.
+    pub fn is_simulation_ended(&self) -> bool {
+        return self.simulation_ended;
+    }
+
+    /// Return the self.simulation_non_stop boolean.
+    pub fn is_simulation_non_stop(&self) -> bool {
+        return self.simulation_non_stop;
     }
 
     /// Calculate the spacing between rows and columns.

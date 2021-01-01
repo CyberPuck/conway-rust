@@ -41,6 +41,7 @@ struct Model {
     window_width: f32,
     time: Duration,
     params: ConfigParams,
+    window_id: window::Id,
 }
 
 impl GUI {
@@ -126,7 +127,8 @@ impl GUI {
             };
 
             // add a window to the view
-            app.new_window()
+            let id = app
+                .new_window()
                 .title(name)
                 .view(GUI::view)
                 .build()
@@ -150,17 +152,33 @@ impl GUI {
                 window_width: window_data.w(),
                 time: Duration::new(0, 0),
                 params: GLOBAL_PARAMS,
+                window_id: id,
             }
         }
     }
 
-    fn update(_app: &App, model: &mut Model, _update: Update) {
+    fn update(app: &App, model: &mut Model, _update: Update) {
         // use _update.since_last as how long it has been since last step
         model.time += _update.since_last;
         if model.time > model.engine.get_update_rate_duration() {
             model.engine.take_step();
             model.time = Duration::new(0, 0);
-        }
+
+            // update the window title if the simulation has eneded
+            if model.engine.is_simulation_ended() {
+                app.window(model.window_id).unwrap().set_title(&format!(
+                    "Conway-rust {}: {} -- Simulation Completed",
+                    crate_version!(),
+                    model.params.file_name
+                ));
+            } else if model.engine.is_simulation_non_stop() {
+                app.window(model.window_id).unwrap().set_title(&format!(
+                    "Conway-rust {}: {} -- Non-stop",
+                    crate_version!(),
+                    model.params.file_name
+                ));
+            }
+        };
     }
 
     fn view(app: &App, model: &Model, frame: Frame) {
