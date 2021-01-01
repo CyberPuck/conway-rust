@@ -4,6 +4,7 @@
 mod conway_engine;
 use nannou::color::named;
 use nannou::prelude::*;
+use nannou::winit::window::Icon;
 use std::time::Duration;
 
 #[derive(Clone, Copy)]
@@ -131,6 +132,12 @@ impl GUI {
                 .resizable(false)
                 .build()
                 .unwrap();
+
+            // try to load icon
+            let icon = GUI::load_icon("icons/main-icon.png".to_string());
+            if  icon.is_ok() {
+                app.window(id).unwrap().set_window_icon(Some(icon.unwrap()));
+            }
 
             // return the model
             Model {
@@ -301,5 +308,27 @@ impl GUI {
         let lower_y = (model.window_height / 2.0) * -1.0;
 
         (lower_x, lower_y)
+    }
+
+    /// Load an icon given a String location to the icon file.
+    /// If the file fails to open or load an error will be thrown.
+    /// Expecting an image (png currently).
+    /// # Params
+    /// icon: String, path to icon file.
+    /// # Returns
+    /// Result<Icon, &'static str>, Either the Icon is returned or an error string
+    fn load_icon(icon: String) -> Result<Icon, &'static str> {
+
+        let image = match nannou::image::open(icon) {
+            Ok(image) => image.into_rgba8(),
+            Err(_err) => return Err("Failed to read icon file")
+        };
+
+        let (icon_width, icon_height) = image.dimensions();
+
+        match Icon::from_rgba(image.into_raw(), icon_width, icon_height) {
+            Ok(icon) => Ok(icon),
+            Err(_err) => Err("Failed to create icon")
+        }
     }
 }
