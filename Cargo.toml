@@ -1,6 +1,6 @@
 [package]
 name = "conway-rust"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["CyberPuck <traverskyle9@gmail.com>"]
 edition = "2018"
 description = "Conway's game of life written in rust as a GUI application"

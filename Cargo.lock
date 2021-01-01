@@ -286,7 +286,7 @@ checksum = "cd51eab21ab4fd6a3bf889e2d0958c0a6e3a61ad04260325e919e652a2a62826"
 
 [[package]]
 name = "conway-rust"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "nannou",
