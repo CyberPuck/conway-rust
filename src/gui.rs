@@ -128,6 +128,7 @@ impl GUI {
                 .new_window()
                 .title(name)
                 .view(GUI::view)
+                .resizable(false)
                 .build()
                 .unwrap();
 
